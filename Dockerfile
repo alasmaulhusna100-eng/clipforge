@@ -13,6 +13,9 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+# Build-time placeholder only — the real DATABASE_URL is injected at runtime.
+# (Some server modules read env during `next build` page-data collection.)
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

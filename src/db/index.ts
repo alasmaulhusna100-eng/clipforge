@@ -3,8 +3,13 @@ import { Pool } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
 
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
+// Never throw at import time: `next build` evaluates modules while collecting
+// page data, and in CI/Docker the real DATABASE_URL only exists at runtime.
+// Pool is lazy — it does not connect until the first query.
+if (!databaseUrl && process.env.NEXT_PHASE !== "phase-production-build") {
+  console.warn(
+    "[db] DATABASE_URL is not set — database queries will fail until it is configured."
+  );
 }
 
 const globalForDb = globalThis as typeof globalThis & {
@@ -14,7 +19,8 @@ const globalForDb = globalThis as typeof globalThis & {
 export const pool =
   globalForDb.__arenaNextJsPostgresqlPool ??
   new Pool({
-    connectionString: databaseUrl,
+    connectionString:
+      databaseUrl ?? "postgresql://postgres:postgres@127.0.0.1:5432/app_db",
   });
 
 if (process.env.NODE_ENV !== "production") {
